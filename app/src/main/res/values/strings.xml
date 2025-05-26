@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">OrchidEase</string>
+    <string name="il_tuo_giardino">Il tuo giardino</string>
+    <string name="cambia_info">Cambia l\'info</string>
+    <string name="calendario">Calendario di cura</string>
+    <string name="aggiungi">Aggiungi nel giardino</string>
+    <string name="cerca">Cerca nel catalogo</string>
+    <string name="dettagli">Dettagli</string>
+    <string name="back_button">Back</string>
+</resources>

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "291436473433",
+    "project_id": "orchidease-b2538",
+    "storage_bucket": "orchidease-b2538.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:291436473433:android:32c8c0a5cac25b1aac9548",
+        "android_client_info": {
+          "package_name": "com.example.orchidease00"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD7qegwz5MGDVHzI4yVBBqvIfDScYAxIE0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

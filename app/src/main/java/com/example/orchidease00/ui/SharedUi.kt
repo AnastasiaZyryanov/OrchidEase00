@@ -4,34 +4,25 @@ import android.app.Activity
 import android.content.Context
 import android.graphics.Bitmap
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import java.time.LocalDate
 import android.net.Uri
-import android.util.Log
-import androidx.activity.compose.ManagedActivityResultLauncher
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
+
+
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
@@ -39,17 +30,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
-import coil.compose.SubcomposeAsyncImage
-import coil.compose.SubcomposeAsyncImageContent
 import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.painter.BitmapPainter
-import androidx.compose.ui.platform.LocalContext
 import android.graphics.BitmapFactory
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.ui.graphics.ImageBitmap
 
 import java.util.*
@@ -170,60 +157,14 @@ fun OrchidPhotoManager(
 
 @Composable
 fun OrchidPhotoManager(
-    //imageUris: List<Uri>,
     imagePath: String,
     tempImageUri: Uri?,
     onImagesChanged: (String) -> Unit,
-    //onImagesChanged: (List<Uri>) -> Unit,
     onPickImagesClicked: () -> Unit
 ) {
     Column {
         Text("Foto", style = MaterialTheme.typography.titleMedium)
-
-        /*
-        LazyRow {
-            items(imageUris) { uri ->
-                Box(modifier = Modifier.padding(4.dp)) {
-                    val context = LocalContext.current
-                    val bitmap = remember(uri) {
-                        try {
-                            val inputStream = context.contentResolver.openInputStream(uri)
-                            BitmapFactory.decodeStream(inputStream)?.asImageBitmap()
-                        } catch (e: Exception) {
-                            Log.e("ImageLoad", "Error loading image", e)
-                            null
-                        }
-                    }
-
-                    if (bitmap != null) {
-                        Image(
-                            painter = BitmapPainter(bitmap),
-                            contentDescription = null,
-                            modifier = Modifier
-                                .size(100.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .border(1.dp, Color.Gray)
-                        )
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .size(100.dp)
-                                .background(Color.LightGray),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.Default.Refresh, contentDescription = "Error")
-                        }
-                    }
-                    IconButton(
-                        onClick = { onImagesChanged(imageUris - uri) },
-                        modifier = Modifier.align(Alignment.TopEnd)
-                    ) {
-                        Icon(Icons.Default.Delete, contentDescription = "Delete")
-                    }
-                }
-            }
-        }
-         */
+            /*
         if (imagePath.isNotEmpty()) {
             val bitmap = rememberBitmapFromPath(imagePath)
             if (bitmap != null) {
@@ -235,7 +176,7 @@ fun OrchidPhotoManager(
             } else {
                 Text("Non riuscito caricare l'imagine")
             }
-        }
+        }*/
 
         if (imagePath.isNotEmpty() || tempImageUri != null) {
             Box(modifier = Modifier.padding(4.dp)) {
@@ -351,7 +292,7 @@ fun saveImageToInternalStorage(context: Context, uri: Uri): String? {
     }
 }
 
-
+/*
 @Composable
 fun DateField(label: String, value: LocalDate?, onClick: () -> Unit) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -372,7 +313,44 @@ fun DateField(label: String, value: LocalDate?, onClick: () -> Unit) {
             enabled = false  // per non aprire la tastiera
         )
     }
+}*/
+
+@Composable
+fun DateField(
+    label: String,
+    date: LocalDate?,
+    onClick: () -> Unit
+) {
+    val text = date?.toString() ?: ""
+    val interactionSource = remember { MutableInteractionSource() }
+
+    OutlinedTextField(
+        value = text,
+        onValueChange = {},
+        label = { Text(label) },
+        readOnly = true,
+        enabled = true,
+        interactionSource = interactionSource,
+        modifier = Modifier.fillMaxWidth(),
+        colors = TextFieldDefaults.colors(
+            focusedTextColor = Color.Black,
+            unfocusedTextColor = Color.Black,
+            disabledTextColor = Color.Black,
+            focusedContainerColor = Color.Transparent,
+            unfocusedContainerColor = Color.Transparent,
+            disabledContainerColor = Color.Transparent
+        )
+    )
+
+    LaunchedEffect(interactionSource) {
+        interactionSource.interactions.collect { interaction ->
+            if (interaction is PressInteraction.Release) {
+                onClick()
+            }
+        }
+    }
 }
+
 
 @Composable
 fun rememberDatePickerLauncher(): (onDateSelected: (LocalDate) -> Unit) -> Unit {

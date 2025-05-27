@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -256,13 +257,11 @@ fun EditOrchidScreen(
             ) {
                 Button(
                     onClick = {
-                        if (selectedCatalogItem != null) {
-                            val updated = orchidData.copy(
-                                name = selectedCatalogItem!!.name,
+                           val updated = orchidData.copy(
+                                name = selectedCatalogItem?.name ?: orchidData.name,
+                                orchidTypeId = selectedCatalogItem?.id ?: orchidData.orchidTypeId,
                                 customName = customName,
                                 filePath = currentImagePath,
-                               // imageUris = imageUris.map { it.toString() },
-                                orchidTypeId = selectedCatalogItem!!.id,
                                 purchaseDate = purchaseDate,
                                 repotDate = repotDate,
                                 bloomDate = bloomDate,
@@ -273,29 +272,44 @@ fun EditOrchidScreen(
                             )
                             viewModel.updateMyOrchid(updated)
                             onSaveComplete()
-                        }
                     },
                     modifier = Modifier.weight(1f)
                 ) {
                     Text("Salva")
                 }
 
+                var showDialog by remember { mutableStateOf(false) }
+
                 OutlinedButton(
-                    onClick = {
-                        viewModel.deleteMyOrchid(orchidData)
-                        onDelete(orchidData)
-                    },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red)
+                    onClick = { showDialog = true },
+                    modifier = Modifier.weight(1f)
                 ) {
                     Text("Cancella")
                 }
 
-            }
-
-        } ?: run {
-            Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+                if (showDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showDialog = false },
+                        title = { Text("Conferma eliminazione") },
+                        text = { Text("Sei sicuro di voler eliminare questa orchidea?") },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    viewModel.deleteMyOrchid(orchidData)
+                                    onDelete(orchidData)
+                                    showDialog = false
+                                }
+                            ) {
+                                Text("Sì")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showDialog = false }) {
+                                Text("Annulla")
+                            }
+                        }
+                    )
+                }
             }
         }
     }

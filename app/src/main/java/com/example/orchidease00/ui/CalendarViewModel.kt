@@ -1,5 +1,8 @@
 package com.example.orchidease00.ui
 
+import android.content.Context
+import android.util.Log
+import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.orchidease00.data.OrchidEvent
@@ -10,6 +13,9 @@ import kotlinx.coroutines.flow.StateFlow
 
 
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import kotlin.collections.flatMap
 
 
@@ -29,13 +35,15 @@ class CalendarViewModel(
                             OrchidEvent(orchid.name, it, "La scorsa irrigazione di")
                         },
                         orchid.nextWatering?.let {
-                            OrchidEvent(orchid.name, it, "La prossima irrigazione di")
+                            val localDate = Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate()
+                            OrchidEvent(orchid.name, localDate, "La prossima irrigazione di")
                         },
                         orchid.lastFertilizing?.let {
                             OrchidEvent(orchid.name, it, "La scorsa fertilizzazione di")
                         },
                         orchid.nextFertilizing?.let {
-                            OrchidEvent(orchid.name, it, "La prossima fertilizzazione di")
+                            val localDate = Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate()
+                            OrchidEvent(orchid.name, localDate, "La prossima fertilizzazione di")
                         },
                         orchid.purchaseDate?.let {
                             OrchidEvent(orchid.name, it, "Comprato")
@@ -52,6 +60,31 @@ class CalendarViewModel(
             }
         }
     }
+/*
+   fun scheduleOrchidReminder(context: Context, orchidName: String, dateTimeMillis: Long) {
+        Log.d("Reminder", "Запланировано: $orchidName в ${Date(dateTimeMillis)}")
+        Toast.makeText(context, "Reminder set for ${Date(dateTimeMillis)}", Toast.LENGTH_SHORT).show()
+
+        scheduleNotification(context, orchidName, dateTimeMillis)
+    }
+
+ */
+fun scheduleOrchidReminder(context: Context, orchidName: String, dateTimeMillis: Long) {
+    val dateTime = Instant.ofEpochMilli(dateTimeMillis)
+        .atZone(ZoneId.systemDefault())
+        .toLocalDateTime()
+
+    Log.d("Reminder", "Запланировано: $orchidName в $dateTime")
+    Toast.makeText(
+        context,
+        "Reminder set for ${dateTime.format(DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm"))}",
+        Toast.LENGTH_SHORT
+    ).show()
+
+    scheduleNotification(context, orchidName, dateTimeMillis)
+}
+
+
 }
 
 

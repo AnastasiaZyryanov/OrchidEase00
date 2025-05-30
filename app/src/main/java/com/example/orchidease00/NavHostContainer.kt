@@ -58,6 +58,12 @@ fun NavHostContainer(navController: NavHostController,
 
             val uiState = viewModel.uiState.collectAsState().value
             val catalogItems = uiState.orchids
+            val context = LocalContext.current
+            val application = context.applicationContext as Application
+            val database = MyOrchidDatabase.getDatabase(application)
+            val dao = database.myOrchidDao()
+            val factory = CalendarViewModelFactory(dao)
+            val calendarViewModel: CalendarViewModel = viewModel(factory = factory)
 
             EditOrchidScreen(
                 orchidId = id,
@@ -70,7 +76,8 @@ fun NavHostContainer(navController: NavHostController,
                 },
                 onCatalogOpen = { name ->
                     navController.navigate("${AppScreen.Dettagli.name}/${Uri.encode(name)}")
-                }
+                },
+                calendarViewModel=calendarViewModel
             )
         }
 
@@ -90,14 +97,22 @@ fun NavHostContainer(navController: NavHostController,
         composable(AppScreen.Aggiungi.name) {
             val viewModel: OrchidViewModel = viewModel()
             val uiState by viewModel.uiState.collectAsState()
+            val context = LocalContext.current
+            val application = context.applicationContext as Application
+            val database = MyOrchidDatabase.getDatabase(application)
+            val dao = database.myOrchidDao()
+            val factory = CalendarViewModelFactory(dao)
+            val calendarViewModel: CalendarViewModel = viewModel(factory = factory)
             AddToGardenScreen(
                 catalogItems = uiState.orchids,
                 onSave = { newOrchid ->
                     viewModel.insertMyOrchid(newOrchid)
                     navController.popBackStack()
-                }
+                },
+                calendarViewModel=calendarViewModel
             ) }
-        composable(AppScreen.Cerca.name) {
+
+            composable(AppScreen.Cerca.name) {
             val catalogViewModel: OrchidCatalogViewModel = viewModel()
             val appUiState by catalogViewModel.uiState.collectAsState()
             CatalogScreen(uiState = appUiState.catalogUiState,

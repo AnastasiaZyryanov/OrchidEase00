@@ -6,7 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 
-@Database(entities = [MyOrchid::class], version = 5)
+@Database(entities = [MyOrchid::class], version = 6)
 @TypeConverters(Converters::class)
 abstract class MyOrchidDatabase : RoomDatabase() {
     abstract fun myOrchidDao(): MyOrchidDao

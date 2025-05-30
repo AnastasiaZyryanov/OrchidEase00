@@ -1,6 +1,7 @@
 package com.example.orchidease00.ui
 
 import android.app.Activity
+import android.app.TimePickerDialog
 import android.content.Context
 import android.graphics.Bitmap
 import androidx.compose.foundation.clickable
@@ -21,8 +22,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
-
-
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
@@ -35,125 +34,126 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.asImageBitmap
 import android.graphics.BitmapFactory
+import android.view.WindowManager
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.ui.platform.LocalDensity
 
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 import java.util.*
 import com.example.orchidease00.data.OrchidCatalogItem
+import kotlinx.coroutines.delay
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
-
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun CatalogNameAutocompleteField(
     catalogItems: List<OrchidCatalogItem>,
-    selectedItem: OrchidCatalogItem?,
     searchQuery: String,
     onQueryChange: (String) -> Unit,
     onItemSelected: (OrchidCatalogItem) -> Unit,
-    modifier: Modifier
+    modifier: Modifier = Modifier
 ) {
-    var expanded by remember { mutableStateOf(false) }
-
     val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusRequester = remember { FocusRequester() }
+    var showSuggestions by remember { mutableStateOf(false) }
 
-    OutlinedTextField(
-        value = searchQuery,
-        onValueChange = {
-            onQueryChange(it)
-            expanded = true
-        },
-        label = { Text("Nome dal catalogo") },
-        modifier = Modifier
-            .fillMaxWidth(),
-        keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
-        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() })
-    )
+    val filteredItems = remember(searchQuery) {
+        catalogItems.filter {
+            it.name.contains(searchQuery, ignoreCase = true)
+        }
+    }
 
-    DropdownMenu(
-        expanded = expanded && searchQuery.isNotBlank(),
-        onDismissRequest = { expanded = false }
-    ) {
-        catalogItems
-            .filter { it.name.contains(searchQuery, ignoreCase = true) }
-            .forEach { item ->
-                DropdownMenuItem(
-                    text = { Text(item.name) },
-                    onClick = {
-                        onItemSelected(item)
-                        onQueryChange(item.name)
-                        expanded = false
+   LaunchedEffect(searchQuery) {
+        showSuggestions = searchQuery.isNotBlank() && filteredItems.isNotEmpty()
+        if (showSuggestions) keyboardController?.show()
+    }
+
+    Box(modifier = modifier) {
+        Column {
+            // Поле ввода
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { onQueryChange(it) },
+                label = { Text("Nome dal catalogo") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester)
+                    .onFocusChanged {
+                        if (it.isFocused) keyboardController?.show()
+                    },
+                keyboardOptions = KeyboardOptions(
+                    imeAction = ImeAction.Done,
+                    keyboardType = KeyboardType.Text
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = { focusManager.clearFocus() }
+                ),
+                singleLine = true
+            )
+
+            if (showSuggestions && filteredItems.isNotEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 200.dp)
+                        .background(MaterialTheme.colorScheme.surface)
+                        .border(1.dp, MaterialTheme.colorScheme.outline)
+                ) {
+                    LazyColumn {
+                        items(filteredItems) { item ->
+                            Text(
+                                text = item.name,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        onItemSelected(item)
+                                        onQueryChange(item.name)
+                                        showSuggestions = false
+                                        focusManager.clearFocus()
+                                    }
+                                    .padding(16.dp)
+                            )
+                            HorizontalDivider()
+                        }
                     }
-                )
+                }
             }
+        }
+
+        LaunchedEffect(Unit) {
+            delay(300)
+            focusRequester.requestFocus()
+            keyboardController?.show()
+        }
     }
 }
-/*
-@Composable
-fun OrchidPhotoManager(
-    imageUris: List<Uri>,
-    onImagesChanged: (List<Uri>) -> Unit,
-    onPickImagesClicked: () -> Unit
-) {
-    Column {
-        Text("Foto", style = MaterialTheme.typography.titleMedium)
 
-        LazyRow {
-            items(imageUris) { uri ->
-                Box(modifier = Modifier.padding(4.dp)) {
-                    SubcomposeAsyncImage(
-                        model = uri,
-                        contentDescription = null,
-                        modifier = Modifier
-                            .size(100.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .border(1.dp, Color.Gray),
-                        loading = {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                            }
-                        },
-                        error = {
-                            Icon(
-                                imageVector = Icons.Default.Refresh,
-                                contentDescription = "Errore di caricamento",
-                                tint = Color.Gray,
-                                modifier = Modifier.size(48.dp)
-                            )
-                        }
-                    )
-
-                }
-
-                    IconButton(
-                        onClick = {
-                            val updatedList = imageUris.toMutableList().apply {
-                                remove(uri)
-                            }
-                            onImagesChanged(updatedList)
-                        },
-                        modifier = Modifier
-                            //.align(Alignment.Center)
-                            .background(Color.White, CircleShape)
-                    ) {
-                        Icon(Icons.Default.Delete, contentDescription = "Cancellare", tint = Color.Red)
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Button(onClick = onPickImagesClicked) {
-            Text("Aggiungi la foto")
-        }
-}
- */
 
 @Composable
 fun OrchidPhotoManager(
@@ -164,19 +164,6 @@ fun OrchidPhotoManager(
 ) {
     Column {
         Text("Foto", style = MaterialTheme.typography.titleMedium)
-            /*
-        if (imagePath.isNotEmpty()) {
-            val bitmap = rememberBitmapFromPath(imagePath)
-            if (bitmap != null) {
-                Image(
-                    bitmap = bitmap,
-                    contentDescription = null,
-                    modifier = Modifier.size(100.dp)
-                )
-            } else {
-                Text("Non riuscito caricare l'imagine")
-            }
-        }*/
 
         if (imagePath.isNotEmpty() || tempImageUri != null) {
             Box(modifier = Modifier.padding(4.dp)) {
@@ -204,7 +191,8 @@ fun OrchidPhotoManager(
         }
     }
 }
-// Новая функция для безопасной загрузки
+
+
 @Composable
 fun rememberBitmapFromPath(path: String?): ImageBitmap? {
     return remember(path) {
@@ -292,29 +280,6 @@ fun saveImageToInternalStorage(context: Context, uri: Uri): String? {
     }
 }
 
-/*
-@Composable
-fun DateField(label: String, value: LocalDate?, onClick: () -> Unit) {
-    val interactionSource = remember { MutableInteractionSource() }
-
-    Box(modifier = Modifier
-        .fillMaxWidth()
-        .clickable(
-            interactionSource = interactionSource,
-            indication = null
-        ) { onClick() }  //
-    ) {
-        OutlinedTextField(
-            value = value?.toString() ?: "",
-            onValueChange = {},
-            label = { Text(label) },
-            modifier = Modifier.fillMaxWidth(),
-            readOnly = true,
-            enabled = false  // per non aprire la tastiera
-        )
-    }
-}*/
-
 @Composable
 fun DateField(
     label: String,
@@ -372,5 +337,53 @@ fun rememberDatePickerLauncher(): (onDateSelected: (LocalDate) -> Unit) -> Unit 
                 ).show()
             }
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DateTimePickerField(
+    label: String,
+    selectedDateTime: Long?, // millis
+    onDateTimeSelected: (Long) -> Unit
+) {
+    val context = LocalContext.current
+    val dateFormatter = remember { DateTimeFormatter.ofPattern("dd MMM yyyy • HH:mm") }
+
+    val calendar = Calendar.getInstance()
+
+    val datePickerDialog = android.app.DatePickerDialog(
+        context,
+        { _, year, month, dayOfMonth ->
+            val pickedDate = LocalDate.of(year, month + 1, dayOfMonth)
+
+            TimePickerDialog(
+                context,
+                { _, hourOfDay, minute ->
+                    val pickedDateTime = pickedDate.atTime(hourOfDay, minute)
+                    val millis = pickedDateTime
+                        .atZone(ZoneId.systemDefault())
+                        .toInstant()
+                        .toEpochMilli()
+                    onDateTimeSelected(millis)
+                },
+                calendar.get(Calendar.HOUR_OF_DAY),
+                calendar.get(Calendar.MINUTE),
+                true
+            ).show()
+        },
+        calendar.get(Calendar.YEAR),
+        calendar.get(Calendar.MONTH),
+        calendar.get(Calendar.DAY_OF_MONTH)
+    )
+
+    val displayText = selectedDateTime?.let {
+        Instant.ofEpochMilli(it)
+            .atZone(ZoneId.systemDefault())
+            .format(dateFormatter)
+    } ?: label
+
+    OutlinedButton(onClick = { datePickerDialog.show() }) {
+        Text(displayText)
     }
 }

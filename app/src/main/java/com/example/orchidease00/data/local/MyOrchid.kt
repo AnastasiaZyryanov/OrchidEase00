@@ -31,9 +31,9 @@ data class MyOrchid(
     val repotDate: LocalDate? = null,
     val bloomDate: LocalDate? = null,
     val lastWatered: LocalDate? = null,
-    val nextWatering: LocalDate? = null,
+    val nextWatering: Long? = null,
     val lastFertilizing: LocalDate? = null,
-    val nextFertilizing: LocalDate? = null,
+    val nextFertilizing: Long? = null,
        )
 
 

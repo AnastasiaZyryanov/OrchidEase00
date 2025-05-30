@@ -1,6 +1,7 @@
 package com.example.orchidease00.ui
 
 import android.app.Activity
+import android.app.Application
 import android.app.DatePickerDialog
 import android.content.Context
 import android.net.Uri
@@ -27,35 +28,40 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.lifecycle.viewmodel.compose.viewModel
 import java.time.LocalDate
 import java.util.*
 import com.example.orchidease00.data.OrchidCatalogItem
 import com.example.orchidease00.data.local.MyOrchid
+import com.example.orchidease00.data.local.MyOrchidDatabase
 import kotlinx.coroutines.delay
+
 
 
 @Composable
 fun AddToGardenScreen(
     catalogItems: List<OrchidCatalogItem>,
     onSave: (MyOrchid) -> Unit,
-    ) {
+    calendarViewModel: CalendarViewModel
+) {
     Log.d("AddToGardenScreen", "Schermo compose")
 
     var selectedCatalogItem by remember { mutableStateOf<OrchidCatalogItem?>(null) }
     var searchQuery by remember { mutableStateOf("") }
 
-    var enteredCustomName by remember { mutableStateOf("") }
+    var customName by remember { mutableStateOf("") }
     var purchaseDate by remember { mutableStateOf<LocalDate?>(null) }
     var repotDate by remember { mutableStateOf<LocalDate?>(null) }
     var bloomDate by remember { mutableStateOf<LocalDate?>(null) }
     var lastWatered by remember { mutableStateOf<LocalDate?>(null) }
-    var nextWatering by remember { mutableStateOf<LocalDate?>(null) }
     var lastFertilizing by remember { mutableStateOf<LocalDate?>(null) }
-    var nextFertilizing by remember { mutableStateOf<LocalDate?>(null) }
+    var nextWateringMillis by remember { mutableStateOf<Long?>(null) }
+    var nextFertilizingMillis by remember { mutableStateOf<Long?>(null) }
 
     val openDatePicker = rememberDatePickerLauncher()
-    val imageUris = remember { mutableStateListOf<Uri>() }
-
     val context = LocalContext.current
     var imagePath by remember { mutableStateOf("") }
     var tempImageUri by remember { mutableStateOf<Uri?>(null) }
@@ -64,48 +70,11 @@ fun AddToGardenScreen(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
         uri?.let {
-
             tempImageUri = it
             imagePath = saveCompressedImageToInternalStorage(context, it) ?: ""
-
-          /*  val savedPath = saveImageToInternalStorage(context, it) // Используем вашу функцию
-            if (savedPath != null) {
-                imagePath = savedPath // Обновляем состояние
-            } else {
-                Text("Errore")
-            }
-
-           */
         }
     }
-    /*
-    val pickImagesLauncher = rememberLauncherForActivityResult(
-       // contract = ActivityResultContracts.PickMultipleVisualMedia()
-        contract = ActivityResultContracts.PickVisualMedia()
-    ) { uris ->
-        uris?.let {
-            imageUris.clear()
-            imageUris.add(it)
-            //   imageUris.addAll(uris)
-        }
-    }
-         */
-        /*
-    val pickImagesLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickMultipleVisualMedia()
-    ) { uris ->
-        if (uris != null) { //always true
-            val updatedList = imageUris.toMutableList().apply {
-                addAll(uris)
-            }
-            imageUris.clear()
-            imageUris.addAll(updatedList)
-        }
-    }
-
-         */
-
-
+    val keyboardController = LocalSoftwareKeyboardController.current
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
 
@@ -113,17 +82,11 @@ fun AddToGardenScreen(
         try {
             delay(100)
             focusRequester.requestFocus()
+            keyboardController?.show()
         } catch (e: Exception) {
             Log.e("FocusError", "Failed to request focus", e)
         }
     }
-
-/*
-    LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
-    }
-
- */
 
     Column(
         modifier = Modifier
@@ -133,10 +96,10 @@ fun AddToGardenScreen(
     ) {
         Text("Scegli il tipo della orchidea", style = MaterialTheme.typography.titleMedium)
 
+
         CatalogNameAutocompleteField(
             catalogItems = catalogItems,
             searchQuery = searchQuery,
-            selectedItem = selectedCatalogItem,
             onQueryChange = { searchQuery = it },
             onItemSelected = {
                 selectedCatalogItem = it
@@ -144,61 +107,63 @@ fun AddToGardenScreen(
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .focusRequester(focusRequester)
+
         )
 
         Spacer(Modifier.height(16.dp))
 
         OutlinedTextField(
-            value = enteredCustomName,
-            onValueChange = { enteredCustomName = it },
-            label = { Text("Nome della orchidea (voluntariamente)") },
-            modifier = Modifier.fillMaxWidth(),
-            keyboardOptions = KeyboardOptions.Default.copy(
-                imeAction = ImeAction.Done
+            value = customName,
+            onValueChange = { customName = it },
+            label = { Text("Nome della orchidea (volontariamente)") },
+            modifier = Modifier.fillMaxWidth()
+                .focusRequester(focusRequester),
+            keyboardOptions = KeyboardOptions(
+                imeAction = ImeAction.Done,
+                autoCorrect = true,
+                keyboardType = KeyboardType.Text
             ),
             keyboardActions = KeyboardActions(
-                onDone = { focusManager.clearFocus() }
+                onDone = { keyboardController?.hide() }
             )
+
         )
 
         Spacer(Modifier.height(16.dp))
-
 
         OrchidPhotoManager(
             imagePath = imagePath,
             tempImageUri = tempImageUri,
-        //    imageUris = imageUris,
-            onImagesChanged = { newPath ->
-                imagePath = newPath
-            },
-          /*  onImagesChanged = { newList ->
-                imageUris.clear()
-                imageUris.addAll(newList)
-            },
-           */
+            onImagesChanged = { newPath -> imagePath = newPath },
             onPickImagesClicked = {
-                pickImagesLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                pickImagesLauncher.launch(
+                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                )
             }
         )
 
         Spacer(Modifier.height(16.dp))
 
-        DateField("Data del'aquisto", purchaseDate) { openDatePicker { purchaseDate = it } }
+        DateField("Data d’acquisto", purchaseDate) { openDatePicker { purchaseDate = it } }
         DateField("Data del trapianto", repotDate) { openDatePicker { repotDate = it } }
         DateField("Data della fioritura", bloomDate) { openDatePicker { bloomDate = it } }
         DateField("Ultima irrigazione", lastWatered) { openDatePicker { lastWatered = it } }
-        DateField("Prossima irrigazione", nextWatering) { openDatePicker { nextWatering = it } }
-        DateField("Ultima fertilizzazione", lastFertilizing) {
-            openDatePicker {
-                lastFertilizing = it
-            }
-        }
-        DateField("Prossima fertilizzazione", nextFertilizing) {
-            openDatePicker {
-                nextFertilizing = it
-            }
-        }
+        DateField("Ultima fertilizzazione", lastFertilizing) { openDatePicker { lastFertilizing = it } }
+
+        Spacer(Modifier.height(16.dp))
+
+        DateTimePickerField(
+            label = "Prossima irrigazione (con orario)",
+            selectedDateTime = nextWateringMillis,
+            onDateTimeSelected = { nextWateringMillis = it }
+        )
+
+        DateTimePickerField(
+            label = "Prossima fertilizzazione (con orario)",
+            selectedDateTime = nextFertilizingMillis,
+            onDateTimeSelected = { nextFertilizingMillis = it }
+        )
+
         Spacer(Modifier.height(24.dp))
 
         Button(
@@ -207,19 +172,34 @@ fun AddToGardenScreen(
                     selectedCatalogItem?.let { item ->
                         val orchid = MyOrchid(
                             name = item.name,
-                            customName = enteredCustomName,
+                            customName = customName,
                             filePath = imagePath,
-                            //imageUris = imageUris.map { it.toString() },
                             orchidTypeId = item.id,
                             purchaseDate = purchaseDate,
                             repotDate = repotDate,
                             bloomDate = bloomDate,
                             lastWatered = lastWatered,
-                            nextWatering = nextWatering,
+                            nextWatering = nextWateringMillis,
                             lastFertilizing = lastFertilizing,
-                            nextFertilizing = nextFertilizing
+                            nextFertilizing = nextFertilizingMillis
                         )
+
                         onSave(orchid)
+
+                        nextWateringMillis?.let {
+                            calendarViewModel.scheduleOrchidReminder(
+                                context,
+                                "${orchid.customName.ifBlank { orchid.name }} — Watering",
+                                it
+                            )
+                        }
+                        nextFertilizingMillis?.let {
+                            calendarViewModel.scheduleOrchidReminder(
+                                context,
+                                "${orchid.customName.ifBlank { orchid.name }} — Fertilizing",
+                                it
+                            )
+                        }
                     }
                 } catch (e: Exception) {
                     Log.e("AddToGarden", "Errore in salvataggio", e)
@@ -232,8 +212,3 @@ fun AddToGardenScreen(
         }
     }
 }
-
-
-
-
-

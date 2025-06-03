@@ -3,6 +3,8 @@ package com.example.orchidease00.data.local
 
 import androidx.room.TypeConverter
 import java.time.LocalDate
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 
 class Converters {
     @TypeConverter
@@ -13,18 +15,15 @@ class Converters {
         dateString?.let { LocalDate.parse(it) }
 
     @TypeConverter
-    fun fromList(list: List<String>): String = list.joinToString(separator = ",")
-
-        /* @TypeConverter
-    fun toList(data: String): List<String> =
-        if (data.isEmpty()) emptyList() else data.split(",")
-
-         */
+    fun fromImagePathList(value: List<String>?): String {
+        return Gson().toJson(value)
+    }
 
     @TypeConverter
-    fun toList(data: String?): List<String>? =
-        data?.takeIf { it.isNotEmpty() }?.split(",") ?: emptyList()
-
+    fun toImagePathList(value: String): List<String> {
+        val listType = object : TypeToken<List<String>>() {}.type
+        return Gson().fromJson(value, listType)
+    }
 }
 
 

@@ -6,7 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 
-@Database(entities = [MyOrchid::class], version = 6)
+@Database(entities = [MyOrchid::class], version = 8)
 @TypeConverters(Converters::class)
 abstract class MyOrchidDatabase : RoomDatabase() {
     abstract fun myOrchidDao(): MyOrchidDao
@@ -21,15 +21,10 @@ abstract class MyOrchidDatabase : RoomDatabase() {
                     context.applicationContext,
                     MyOrchidDatabase::class.java,
                     "orchid_database"
-                ).fallbackToDestructiveMigrationOnDowngrade()
-                    .fallbackToDestructiveMigration() //DESTRUCTIVE MIGRATION
-                    .build()
+                ).build()
                 INSTANCE = instance
                 instance
             }
         }
-
-
-
     }
 }

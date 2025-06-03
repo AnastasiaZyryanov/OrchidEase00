@@ -23,4 +23,17 @@ interface MyOrchidDao {
 
     @Update
     suspend fun update(orchid: MyOrchid)
+
+    @Query("UPDATE my_orchids SET wateringNotified = 1 WHERE id = :orchidId")
+    suspend fun markWateringAsNotified(orchidId: Int)
+
+    @Query("UPDATE my_orchids SET fertilizingNotified = 1 WHERE id = :orchidId")
+    suspend fun markFertilizingAsNotified(orchidId: Int)
+
+    @Query("SELECT * FROM my_orchids WHERE nextWatering <= :currentTime AND wateringNotified = 0")
+    suspend fun getWateringEventsToNotify(currentTime: Long): List<MyOrchid>
+
+    @Query("SELECT * FROM my_orchids WHERE nextFertilizing <= :currentTime AND fertilizingNotified = 0")
+    suspend fun getFertilizingEventsToNotify(currentTime: Long): List<MyOrchid>
+
 }

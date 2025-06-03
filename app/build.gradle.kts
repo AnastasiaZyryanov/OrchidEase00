@@ -1,3 +1,6 @@
+
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -5,7 +8,13 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
-println("DEBUG: SUPABASE_KEY = " + project.findProperty("SUPABASE_KEY"))
+val localProperties = Properties().apply {
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        localPropertiesFile.inputStream().use { load(it) }
+    }
+}
+
 
 android {
     namespace = "com.example.orchidease00"
@@ -22,17 +31,9 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        val supabaseKey: String? = project.findProperty("SUPABASE_KEY") as String?
 
-        if (supabaseKey != null) {
-            buildConfigField("String", "SUPABASE_KEY", "\"$supabaseKey\"")
-        } else {
-            throw GradleException("SUPABASE_KEY is not defined in local.properties")
-
-        }
-
-        buildConfigField("String", "SUPABASE_KEY", "\"${project.findProperty("SUPABASE_KEY")}\"")
-
+        buildConfigField("String", "SUPABASE_URL", "\"${localProperties["SUPABASE_URL"]}\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY", "\"${localProperties["SUPABASE_ANON_KEY"]}\"")
 
         compileOptions {
             isCoreLibraryDesugaringEnabled = true

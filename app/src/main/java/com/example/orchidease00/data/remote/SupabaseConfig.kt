@@ -7,7 +7,7 @@ import com.example.orchidease00.BuildConfig
 
 object SupabaseConfig {
     const val BASE_URL = "https://hzumeqyvreugckkijjgw.supabase.co"
-    const val API_KEY = BuildConfig.SUPABASE_KEY
+    const val API_KEY = BuildConfig.SUPABASE_ANON_KEY
     const val BUCKET = "orchid-images"
     }
 fun HttpRequestBuilder.addAuthHeaders() {
